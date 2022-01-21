@@ -20,6 +20,7 @@ type LogLevel uint32
 const (
 	FatalLevel LogLevel = iota
 	ErrorLevel
+	WarnLevel
 	InfoLevel
 	DebugLevel
 )
@@ -30,6 +31,8 @@ func (level LogLevel) String() string {
 		return "DEBUG"
 	case InfoLevel:
 		return "INFO"
+	case WarnLevel:
+		return "WARN"
 	case ErrorLevel:
 		return "ERROR"
 	case FatalLevel:
@@ -101,6 +104,13 @@ func Debug(format string, v ...interface{}) {
 func Info(format string, v ...interface{}) {
 	if requestedLevel >= InfoLevel {
 		fmt.Fprintf(os.Stdout, formatMessage(InfoLevel, format, v...))
+	}
+}
+
+// Warn sends a warn log message.
+func Warn(format string, v ...interface{}) {
+	if requestedLevel >= WarnLevel {
+		fmt.Fprintf(os.Stderr, formatMessage(WarnLevel, format, v...))
 	}
 }
 
