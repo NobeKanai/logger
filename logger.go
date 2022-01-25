@@ -96,7 +96,7 @@ func SetupRemoteServer(url string) {
 // Debug sends a debug log message.
 func Debug(format string, v ...interface{}) {
 	if requestedLevel >= DebugLevel {
-		fmt.Fprintf(os.Stdout, formatMessage(DebugLevel, format, v...))
+		fmt.Fprintln(os.Stdout, formatMessage(DebugLevel, format, v...))
 	}
 }
 
@@ -110,7 +110,7 @@ func Info(format string, v ...interface{}) {
 // Warn sends a warn log message.
 func Warn(format string, v ...interface{}) {
 	if requestedLevel >= WarnLevel {
-		fmt.Fprintf(os.Stderr, formatMessage(WarnLevel, format, v...))
+		fmt.Fprintln(os.Stderr, formatMessage(WarnLevel, format, v...))
 	}
 }
 
@@ -119,7 +119,7 @@ func Error(format string, v ...interface{}) {
 	if requestedLevel >= ErrorLevel {
 		msg := formatMessage(ErrorLevel, format, v...)
 		Push(msg)
-		fmt.Fprintf(os.Stderr, msg)
+		fmt.Fprintln(os.Stderr, msg)
 	}
 }
 
@@ -127,7 +127,7 @@ func Error(format string, v ...interface{}) {
 func Fatal(format string, v ...interface{}) {
 	if requestedLevel >= FatalLevel {
 		msg := formatMessage(FatalLevel, format, v...)
-		fmt.Fprintf(os.Stderr, msg)
+		fmt.Fprintln(os.Stderr, msg)
 		if remoteServer != "" {
 			c <- msg
 			stop <- struct{}{}
@@ -146,5 +146,5 @@ func Push(message string) {
 
 func formatMessage(level LogLevel, format string, v ...interface{}) string {
 	prefix := fmt.Sprintf("[%s] [%s] ", time.Now().Format("2006-01-02T15:04:05"), level)
-	return fmt.Sprintf(prefix+format+"\n", v...)
+	return fmt.Sprintf(prefix+format, v...)
 }
