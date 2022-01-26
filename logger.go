@@ -45,7 +45,7 @@ func (level LogLevel) String() string {
 // EnableDebug increases logging, more verbose (debug)
 func EnableDebug() {
 	requestedLevel = DebugLevel
-	formatMessage(InfoLevel, "Debug mode enabled")
+	fmt.Fprintln(os.Stdout, formatMessage(InfoLevel, "Debug mode enabled"))
 }
 
 // SetupRemoteServer enables pushing Error/Fatal logs to the remote server
