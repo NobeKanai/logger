@@ -103,7 +103,7 @@ func Debug(format string, v ...interface{}) {
 // Info sends an info log message.
 func Info(format string, v ...interface{}) {
 	if requestedLevel >= InfoLevel {
-		fmt.Fprintf(os.Stdout, formatMessage(InfoLevel, format, v...))
+		fmt.Fprintln(os.Stdout, formatMessage(InfoLevel, format, v...))
 	}
 }
 
