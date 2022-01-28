@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -42,22 +43,14 @@ func (level LogLevel) String() string {
 	}
 }
 
-// EnableDebug increases logging, more verbose (debug)
-func EnableDebug() {
-	requestedLevel = DebugLevel
-	fmt.Fprintln(os.Stdout, formatMessage(InfoLevel, "Debug mode enabled"))
-}
-
-// SetupRemoteServer enables pushing Error/Fatal logs to the remote server
-// by sending POST http request
-func SetupRemoteServer(url string) {
-	if url == "" {
+func init() {
+	remoteServer = os.Getenv("LOGGER_REMOTE_SERVER")
+	if remoteServer == "" {
 		return
 	}
 
-	Info("Enable pushing error/fatal logs to remote server %q", url)
+	Info("Enable pushing error/fatal logs to remote server %q", remoteServer)
 
-	remoteServer = url
 	c = make(chan string, 20)
 	stop = make(chan struct{})
 
@@ -65,15 +58,19 @@ func SetupRemoteServer(url string) {
 		tick := time.Tick(5 * time.Second)
 		messages := make(map[string]struct{})
 		send := func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			msgPack := ""
 			for msg := range messages {
 				msgPack += msg + "\n"
 				delete(messages, msg)
 			}
 			if msgPack != "" {
-				r, err := http.Post(remoteServer, "text/plain", strings.NewReader(msgPack[:len(msgPack)-1]))
+				req, err := http.NewRequestWithContext(ctx, http.MethodPost, remoteServer, strings.NewReader(msgPack[:len(msgPack)-1]))
+				r, err := http.DefaultClient.Do(req)
 				if err != nil {
-					Error("Cannot push logs to remote server: %v", err)
+					Warn("Cannot push logs to remote server: %v", err)
 				}
 				r.Body.Close()
 			}
@@ -86,11 +83,20 @@ func SetupRemoteServer(url string) {
 			case msg := <-c:
 				messages[msg] = struct{}{}
 			case <-stop:
+				for msg := range c {
+					messages[msg] = struct{}{}
+				}
 				send()
-				return
+				os.Exit(1)
 			}
 		}
 	}()
+}
+
+// EnableDebug increases logging, more verbose (debug)
+func EnableDebug() {
+	requestedLevel = DebugLevel
+	fmt.Fprintln(os.Stdout, formatMessage(InfoLevel, "Debug mode enabled"))
 }
 
 // Debug sends a debug log message.
@@ -130,10 +136,11 @@ func Fatal(format string, v ...interface{}) {
 		fmt.Fprintln(os.Stderr, msg)
 		if remoteServer != "" {
 			c <- msg
+			close(c)
 			stop <- struct{}{}
-			time.Sleep(time.Second)
+		} else {
+			os.Exit(1)
 		}
-		os.Exit(1)
 	}
 }
 
