@@ -71,6 +71,7 @@ func init() {
 				r, err := http.DefaultClient.Do(req)
 				if err != nil {
 					Warn("Cannot push logs to remote server: %v", err)
+					return
 				}
 				r.Body.Close()
 			}
